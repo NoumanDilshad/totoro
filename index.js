@@ -26,8 +26,15 @@ var rain = function(apiConfig) {
     for (var apiVersion in apiConfig) {
         if (apiConfig.hasOwnProperty(apiVersion)) {
             var apiVersionConfig = apiConfig[apiVersion];
+
             var apiVersionActive = apiVersionConfig.active;
+            // use default value if not found
+            if (apiVersionActive == null) apiVersionActive = true;
+
             var apiVersionDeprecated = apiVersionConfig.deprecated;
+            // use default value if not found
+            if (apiVersionDeprecated == null) apiVersionDeprecated = false;
+
             delete apiVersionConfig.active;
             delete apiVersionConfig.deprecated;
             versions[apiVersion] = [];
@@ -40,9 +47,16 @@ var rain = function(apiConfig) {
 
             for (var endpoint in apiVersionConfig) {
                 if (apiVersionConfig.hasOwnProperty(endpoint)) {
+                    var endpointActive = apiVersionConfig[endpoint].active;
+                    // use default value if not found
+                    if (endpointActive == null) endpointActive = true;
 
-                    apiVersionConfig[endpoint].active = apiVersionConfig[endpoint].active && apiVersionActive;
-                    apiVersionConfig[endpoint].deprecated = apiVersionConfig[endpoint].deprecated || apiVersionDeprecated;
+                    var endpointDeprecated = apiVersionConfig[endpoint].deprecated;
+                    // use default value if not found
+                    if (endpointDeprecated == null) endpointDeprecated = false;
+
+                    apiVersionConfig[endpoint].active = endpointActive && apiVersionActive;
+                    apiVersionConfig[endpoint].deprecated = endpointDeprecated || apiVersionDeprecated;
                     var endpoint = new Endpoint(apiVersion, endpoint, apiVersionConfig[endpoint]);
 
                     // add new endpoint to the list or replace if it exists already
@@ -104,26 +118,39 @@ function populateRouter(versions) {
 function constructRoute(endpoint) {
     switch (endpoint.endpointConfig.method) {
         case consts.HTTP_GET:
+            
             winston.debug('Adding route \'' + endpoint.endpointConfig.method, ' /' + endpoint.apiVersion + endpoint.endpoint + '\'');
-            router.get('/' + endpoint.apiVersion + endpoint.endpoint, function(req, res) {
+            router.get('/' + endpoint.apiVersion + endpoint.endpoint, function(req,res,next){
+                endpoint.endpointConfig.endpointMiddleware(endpoint.apiVersion, req, res,next);
+            },
+            function(req, res) {
                 endpoint.endpointConfig.endpointImplementation(endpoint.apiVersion, req, res);
             });
             break;
         case consts.HTTP_POST:
             winston.debug('Adding route \'' + endpoint.endpointConfig.method, ' /' + endpoint.apiVersion + endpoint.endpoint + '\'');
-            router.post('/' + endpoint.apiVersion + endpoint.endpoint, urlencodedParser, function(req, res) {
+            router.post('/' + endpoint.apiVersion + endpoint.endpoint, urlencodedParser, function(req,res,next){
+                endpoint.endpointConfig.endpointMiddleware(endpoint.apiVersion, req, res,next);
+            }, 
+            function(req, res) {
                 endpoint.endpointConfig.endpointImplementation(endpoint.apiVersion, req, res);
             });
             break;
         case consts.HTTP_DELETE:
             winston.debug('Adding route \'' + endpoint.endpointConfig.method, ' /' + endpoint.apiVersion + endpoint.endpoint + '\'');
-            router.delete('/' + endpoint.apiVersion + endpoint.endpoint, function(req, res) {
+            router.delete('/' + endpoint.apiVersion + endpoint.endpoint, function(req,res,next){
+                endpoint.endpointConfig.endpointMiddleware(endpoint.apiVersion, req, res,next);
+            },
+            function(req, res) {
                 endpoint.endpointConfig.endpointImplementation(endpoint.apiVersion, req, res);
             });
             break;
         case consts.HTTP_PUT:
             winston.debug('Adding route \'' + endpoint.endpointConfig.method, ' /' + endpoint.apiVersion + endpoint.endpoint + '\'');
-            router.put('/' + endpoint.apiVersion + endpoint.endpoint, function(req, res) {
+            router.put('/' + endpoint.apiVersion + endpoint.endpoint, function(req,res,next){
+                endpoint.endpointConfig.endpointMiddleware(endpoint.apiVersion, req, res,next);
+            }, 
+            function(req, res) {
                 endpoint.endpointConfig.endpointImplementation(endpoint.apiVersion, req, res);
             });
             break;
