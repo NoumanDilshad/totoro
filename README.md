@@ -95,6 +95,17 @@ The configuration map used in the `rain` function contains a few required fields
 	 - `res`
 		 - This is the express router parameter used to send a response when the endpoint is called.
 
+-`endpointImplementation`
+	- This point to you middleware function that you want to invoke when endpoint is called. This function must accept four parameters;
+apiVersion, req, res, next e.g. `function(apiVersion, req, resm next) { <endpoint implementation> }`
+- `apiVersion`
+			- This is the API version for the endpoint being called. In the above example, it would be `v1` and `v2` respectively.
+		- `req`
+			- This is the express router parameter which holds all the request data when the endpoint is called.
+	 - `res`
+		 - This is the express router parameter used to send a response when the endpoint is called.
+	- `next`
+		 - This is the express router parameter used to go to the next middleware or function.
 
 ----------
 Thank you for reading :)
